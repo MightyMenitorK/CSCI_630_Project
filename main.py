@@ -42,6 +42,12 @@ class Cell:
 
 class Maze:
 
+    def toggle_button(self, button: tk.Button, cord1: Cord, cord2: Cord):
+        result = self.toggle_barrier(cord1, cord2)
+        if result == -1:
+            print("cant toggle")
+        button.config(text="." if result == 0 else "x")
+
     def point(self, row, col):
         return self.grid[row][col] if 0 <= row < len(self.grid) and 0 <= col < len(self.grid[row]) else None
 
@@ -87,14 +93,15 @@ class Maze:
     def display(self):
         maze = tk.Frame(self.root)
         maze.pack()
-        self.view["maze"] = []
+        self.view["cell"] = []
         for r in range(self.rows):
-            self.view["maze"].append([])
+            self.view["cell"].append([])
             for c in range(self.cols):
                 (vert := tk.Button(maze, text=("x" if self.grid[r][c].get_up() is None else "."))).grid(row=r*2, column=c*2+1)
-            for c in range(self.cols):
                 (hori := tk.Button(maze, text=("x" if self.grid[r][c].get_left() is None else "."))).grid(row=r*2+1, column=c*2)
                 (cell := tk.Button(maze, text=self.grid[r][c].val)).grid(row=r*2+1, column=c*2+1)
+                hori.config(command=lambda b=hori, cord1=Cord(r, c), cord2=Cord(r, c-1): self.toggle_button(b, cord1, cord2))
+                vert.config(command=lambda b=vert, cord1=Cord(r, c), cord2=Cord(r-1, c): self.toggle_button(b, cord1, cord2))
             hori = tk.Button(maze, text="x" if self.grid[r][self.cols-1].get_right() is None else ".")
             hori.grid(row=r*2+1, column=self.cols*2)
         for c in range(self.cols):
@@ -114,69 +121,38 @@ class Maze:
             self.goal.col = col
             self.grid[row][col].val = "G"
 
-    def toggle_barrier(self, cord: Cord, direction: str):
-        cell = self.point(cord.row, cord.col)
-        if cell is not None:
-            if direction == "up":
-                cell.set_up(None)
-                up_cell = self.point(cord.row - 1, cord.col)
-                if up_cell is not None:
-                    up_cell.set_down(None)
-            elif direction == "down":
-                cell.set_down(None)
-                down_cell = self.point(cord.row + 1, cord.col)
-                if down_cell is not None:
-                    down_cell.set_up(None)
-            elif direction == "left":
-                cell.set_left(None)
-                left_cell = self.point(cord.row, cord.col - 1)
-                if left_cell is not None:
-                    left_cell.set_right(None)
-            elif direction == "right":
-                cell.set_right(None)
-                right_cell = self.point(cord.row, cord.col + 1)
-                if right_cell is not None:
-                    right_cell.set_left(None)
-        elif cell is None:
-            if direction == "up":
-                cell.set_up(self.point(cord.row - 1, cord.col))
-                up_cell = self.point(cord.row - 1, cord.col)
-                if up_cell is not None:
-                    up_cell.set_down(cell)
-            elif direction == "down":
-                cell.set_down(self.point(cord.row + 1, cord.col))
-                down_cell = self.point(cord.row + 1, cord.col)
-                if down_cell is not None:
-                    down_cell.set_up(cell)
-            elif direction == "left":
-                cell.set_left(self.point(cord.row, cord.col - 1))
-                left_cell = self.point(cord.row, cord.col - 1)
-                if left_cell is not None:
-                    left_cell.set_right(cell)
-            elif direction == "right":
-                cell.set_right(self.point(cord.row, cord.col + 1))
-                right_cell = self.point(cord.row, cord.col + 1)
-                if right_cell is not None:
-                    right_cell.set_left(cell)
-
     def toggle_barrier(self, cord1: Cord, cord2: Cord):
         cell1 = self.point(cord1.row, cord1.col)
         cell2 = self.point(cord2.row, cord2.col)
-        if cell1 is not None and cell2 is not None:
-            if cord1.row == cord2.row and abs(cord1.col - cord2.col) == 1:
-                if cord1.col < cord2.col:
-                    cell1.set_right(None)
-                    cell2.set_left(None)
-                else:
-                    cell1.set_left(None)
-                    cell2.set_right(None)
-            elif cord1.col == cord2.col and abs(cord1.row - cord2.row) == 1:
-                if cord1.row < cord2.row:
-                    cell1.set_down(None)
-                    cell2.set_up(None)
-                else:
-                    cell1.set_up(None)
-                    cell2.set_down(None)
+        
+        if cell1 is None or cell2 is None:
+            return -1
+
+        # Horizontal Toggle
+        if cord1.row == cord2.row and abs(cord1.col - cord2.col) == 1:
+            left_c, right_c = (cell1, cell2) if cord1.col < cord2.col else (cell2, cell1)
+            if left_c.get_right() is None:
+                left_c.set_right(right_c)
+                right_c.set_left(left_c)
+                return 0
+            else:
+                left_c.set_right(None)
+                right_c.set_left(None)
+                return 1
+
+        # Vertical Toggle
+        elif cord1.col == cord2.col and abs(cord1.row - cord2.row) == 1:
+            up_c, down_c = (cell1, cell2) if cord1.row < cord2.row else (cell2, cell1)
+            if up_c.get_down() is None:
+                up_c.set_down(down_c)
+                down_c.set_up(up_c)
+                return 0
+            else:
+                up_c.set_down(None)
+                down_c.set_up(None)
+                return 1
+
+        return -1
     
     def reset(self):
         return
@@ -189,6 +165,8 @@ if __name__ == "__main__":
     maze.toggle_barrier(Cord(0, 0), Cord(0, 1))
     maze.toggle_barrier(Cord(1, 0), Cord(1, 1))
     maze.toggle_barrier(Cord(1, 1), Cord(2, 1))
+    maze.toggle_barrier(Cord(3, 1), Cord(2, 1))
+    maze.toggle_barrier(Cord(3, 1), Cord(2, 1))
     maze.display()
     print(maze)
     root.mainloop()
