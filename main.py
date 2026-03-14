@@ -50,6 +50,7 @@ class Maze:
         self.rows = rows
         self.cols = cols
         self.grid = []
+        self.view = {}
 
         for r in range(rows):
             self.grid.append([])
@@ -84,13 +85,20 @@ class Maze:
         return result
     
     def display(self):
-        frame = tk.Frame(self.root, padx=10, pady=10)
-        frame.pack()
-        top = tk.Button(frame, text="T", command=lambda: self.toggle_barrier()).grid()
-        bottom = tk.Button(frame, text="B", command=lambda: self.toggle_barrier()).grid()
-        left = tk.Button(frame, text="L", command=lambda: self.toggle_barrier()).grid()
-        right = tk.Button(frame, text="R", command=lambda: self.toggle_barrier()).grid()
-        cell = tk.Label(frame, text=str(self.grid[0][0]))
+        maze = tk.Frame(self.root)
+        maze.pack()
+        self.view["maze"] = []
+        for r in range(self.rows):
+            self.view["maze"].append([])
+            for c in range(self.cols):
+                (vert := tk.Button(maze, text=("x" if self.grid[r][c].get_up() is None else "."))).grid(row=r*2, column=c*2+1)
+            for c in range(self.cols):
+                (hori := tk.Button(maze, text=("x" if self.grid[r][c].get_left() is None else "."))).grid(row=r*2+1, column=c*2)
+                (cell := tk.Button(maze, text=self.grid[r][c].val)).grid(row=r*2+1, column=c*2+1)
+            hori = tk.Button(maze, text="x" if self.grid[r][self.cols-1].get_right() is None else ".")
+            hori.grid(row=r*2+1, column=self.cols*2)
+        for c in range(self.cols):
+            (vert := tk.Button(maze, text="x" if self.grid[self.rows-1][c].get_down() is None else ".")).grid(row=self.rows*2, column=c*2+1)
 
     def move_start(self, row, col):
         if 0 <= row < self.rows and 0 <= col < self.cols:
@@ -178,9 +186,9 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.title("Maze Simulator")
     maze = Maze(root, 5, 5)
-    maze.block_cell(Cord(0, 0), Cord(0, 1))
-    maze.block_cell(Cord(1, 0), Cord(1, 1))
-    maze.block_cell(Cord(1, 1), Cord(2, 1))
+    maze.toggle_barrier(Cord(0, 0), Cord(0, 1))
+    maze.toggle_barrier(Cord(1, 0), Cord(1, 1))
+    maze.toggle_barrier(Cord(1, 1), Cord(2, 1))
     maze.display()
     print(maze)
     root.mainloop()
