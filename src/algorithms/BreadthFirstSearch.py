@@ -1,6 +1,6 @@
 from collections import deque
 
-def bfs(start, goal, graph):
+def bfs(start, goal, get_neighbors):
     """
     Perform Breadth-First Search (BFS).
     :param start: tuple, The starting position
@@ -23,7 +23,7 @@ def bfs(start, goal, graph):
 
         row, col = node
 
-        for neighbor in graph(row, col):
+        for neighbor in get_neighbors(row, col):
             if neighbor not in path:
                 frontier.append((neighbor, path + [neighbor], cost + 1))
 
