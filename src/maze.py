@@ -1,5 +1,7 @@
+import time
 import tkinter as tk
 from cell import Cell, Cord
+from algorithms.BreadthFirstSearch import bfs
 
 class Maze:
 
@@ -18,6 +20,10 @@ class Maze:
         self.cols = cols
         self.grid = []
         self.view = {}
+        self.bfs_time = None
+        self.dfs_time = None
+        self.bfs_path = None
+        self.dfs_path = None
 
         for r in range(rows):
             self.grid.append([])
@@ -35,6 +41,8 @@ class Maze:
 
         self.start = Cord(0, 0)
         self.goal = Cord(rows-1, cols-1)
+        self.grid[self.start.row][self.start.col].val = "S"
+        self.grid[self.goal.row][self.goal.col].val = "G"
 
     def __str__(self):
         result = ""
@@ -52,7 +60,10 @@ class Maze:
         return result
     
     def display(self):
-        maze = tk.Frame(self.root)
+        outer = tk.Frame(self.root, bd=2, relief="solid")
+        outer.pack(padx=50, pady=50)
+
+        maze = tk.Frame(outer)
         maze.pack()
         self.view["cell"] = []
         for r in range(self.rows):
@@ -61,12 +72,34 @@ class Maze:
                 (vert := tk.Button(maze, text=("x" if self.grid[r][c].get_up() is None else "."))).grid(row=r*2, column=c*2+1)
                 (hori := tk.Button(maze, text=("x" if self.grid[r][c].get_left() is None else "."))).grid(row=r*2+1, column=c*2)
                 (cell := tk.Button(maze, text=self.grid[r][c].val)).grid(row=r*2+1, column=c*2+1)
+                self.view["cell"][r].append(cell)
+
+                if self.grid[r][c].val == "S":
+                    cell.config(bg="lightgreen")
+                elif self.grid[r][c].val == "G":
+                    cell.config(bg="lightcoral")
+                else:
+                    cell.config(bg="white")
+
                 hori.config(command=lambda b=hori, cord1=Cord(r, c), cord2=Cord(r, c-1): self.toggle_button(b, cord1, cord2))
                 vert.config(command=lambda b=vert, cord1=Cord(r, c), cord2=Cord(r-1, c): self.toggle_button(b, cord1, cord2))
             hori = tk.Button(maze, text="x" if self.grid[r][self.cols-1].get_right() is None else ".")
             hori.grid(row=r*2+1, column=self.cols*2)
         for c in range(self.cols):
             (vert := tk.Button(maze, text="x" if self.grid[self.rows-1][c].get_down() is None else ".")).grid(row=self.rows*2, column=c*2+1)
+
+        controls = tk.Frame(self.root)
+        controls.pack(pady=10)
+
+        bfs_btn = tk.Button(controls, text="Run BFS", command=self.run_bfs)
+        bfs_btn.pack(side=tk.LEFT, padx=5)
+
+        dfs_btn = tk.Button(controls, text="Run DFS")
+        dfs_btn.pack(side=tk.LEFT, padx=5)
+
+        self.result_label = tk.Label(self.root, text="", justify="left", anchor="w")
+        self.result_label.pack(pady=10)
+        self.update_result_label()
 
     def move_start(self, row, col):
         if 0 <= row < self.rows and 0 <= col < self.cols:
@@ -116,4 +149,152 @@ class Maze:
         return -1
     
     def reset(self):
-        return
+        self.clear_search_marks()
+        self.bfs_time = None
+        self.dfs_time = None
+        self.bfs_path = None
+        self.dfs_path = None
+        self.update_result_label()
+
+    def refresh_cells(self):
+        for r in range(self.rows):
+            for c in range(self.cols):
+                value = self.grid[r][c].val
+                btn = self.view["cell"][r][c]
+
+                btn.config(text=value)
+
+                if value == "S":
+                    btn.config(bg="lightgreen")
+                elif value == "G":
+                    btn.config(bg="lightcoral")
+                elif value == "*":
+                    btn.config(bg="yellow")
+                else:
+                    btn.config(bg="white")
+
+    def clear_search_marks(self):
+        for r in range(self.rows):
+            for c in range(self.cols):
+                if r == self.start.row and c == self.start.col:
+                    self.grid[r][c].val = "S"
+                elif r == self.goal.row and c == self.goal.col:
+                    self.grid[r][c].val = "G"
+                else:
+                    self.grid[r][c].val = "E"
+        self.refresh_cells()
+
+    def get_neighbors(self, row, col):
+        neighbors = []
+        cell = self.grid[row][col]
+
+        if cell.get_up() is not None:
+            neighbors.append((row - 1, col))
+
+        if cell.get_down() is not None:
+            neighbors.append((row + 1, col))
+
+        if cell.get_left() is not None:
+            neighbors.append((row, col - 1))
+
+        if cell.get_right() is not None:
+            neighbors.append((row, col + 1))
+
+        return neighbors
+
+    def update_result_label(self):
+        bfs_time_text = "Not run yet" if self.bfs_time is None else f"{self.bfs_time:.6f} s"
+        dfs_time_text = "Not run yet" if self.dfs_time is None else f"{self.dfs_time:.6f} s"
+
+        bfs_path_text = "Not run yet" if self.bfs_path is None else str(self.bfs_path)
+        dfs_path_text = "Not run yet" if self.dfs_path is None else str(self.dfs_path)
+
+        text = (
+            f"BFS Time: {bfs_time_text}\n"
+            f"BFS Path: {bfs_path_text}\n\n"
+            f"DFS Time: {dfs_time_text}\n"
+            f"DFS Path: {dfs_path_text}"
+        )
+
+        self.result_label.config(text=text, justify="left")
+
+
+    def run_bfs(self):
+        print("BFS button clicked")
+        self.clear_search_marks()
+
+        start_time = time.perf_counter()
+
+        start = (self.start.row, self.start.col)
+        goal = (self.goal.row, self.goal.col)
+        bfs_result = bfs(start, goal, self.get_neighbors)
+
+        end_time = time.perf_counter()
+        elapsed = end_time - start_time
+        self.bfs_time = elapsed
+
+        if bfs_result:
+            path, cost = bfs_result
+            self.bfs_path = path
+
+            start = (self.start.row, self.start.col)
+            goal = (self.goal.row, self.goal.col)
+
+            for r, c in path:
+                if (r, c) != start and (r, c) != goal:
+                    self.grid[r][c].val = "*"
+
+            self.grid[self.start.row][self.start.col].val = "S"
+            self.grid[self.goal.row][self.goal.col].val = "G"
+            self.refresh_cells()
+
+            print("BFS Path:", path)
+            print("BFS Total Cost:", cost)
+        else:
+            self.bfs_path = None
+            print("No BFS path found")
+
+        print(f"BFS Time: {elapsed:.6f} seconds")
+        print("------------------------")
+
+        self.update_result_label()
+
+    def run_bfs(self):
+        print("BFS button clicked")
+        self.clear_search_marks()
+
+        start_time = time.perf_counter()
+
+        start = (self.start.row, self.start.col)
+        goal = (self.goal.row, self.goal.col)
+        bfs_result = bfs(start, goal, self.get_neighbors)
+
+        end_time = time.perf_counter()
+        elapsed = end_time - start_time
+        self.bfs_time = elapsed
+
+        if bfs_result:
+            path, cost = bfs_result
+            self.bfs_path = path
+
+            start = (self.start.row, self.start.col)
+            goal = (self.goal.row, self.goal.col)
+
+            for r, c in path:
+                if (r, c) != start and (r, c) != goal:
+                    self.grid[r][c].val = "*"
+
+            self.grid[self.start.row][self.start.col].val = "S"
+            self.grid[self.goal.row][self.goal.col].val = "G"
+            self.refresh_cells()
+
+            print("BFS Path:", path)
+            print("BFS Total Cost:", cost)
+        else:
+            self.bfs_path = None
+            print("No BFS path found")
+
+        print(f"BFS Time: {elapsed:.6f} seconds")
+        print("------------------------")
+
+        self.update_result_label()
