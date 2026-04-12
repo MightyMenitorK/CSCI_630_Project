@@ -1,20 +1,60 @@
 import time
 import tkinter as tk
+from typing import Any
 from cell import Cell, Cord
 from algorithms.BreadthFirstSearch import bfs
+from algorithms.DepthFirstSearch import dfs
+
 
 class Maze:
 
-    def toggle_button(self, button: tk.Button, cord1: Cord, cord2: Cord):
+    def toggle_button(self, button: tk.Button, cord1: Cord, cord2: Cord) -> None:
+        """
+        Toggle the barrier between two neighboring cells and update the wall button text.
+
+        This function is used when the user clicks one of the small wall buttons
+        in the maze UI. It tries to add or remove a barrier between the two given
+        cell positions. After that, it changes the button text to show the new state:
+        "." for open path and "x" for blocked path.
+
+        :param button: The wall button that was clicked in the UI.
+        :param cord1: The coordinate of the first cell.
+        :param cord2: The coordinate of the second neighboring cell.
+        :return: None
+        """
         result = self.toggle_barrier(cord1, cord2)
         if result == -1:
             print("cant toggle")
         button.config(text="." if result == 0 else "x")
 
-    def point(self, row, col):
+    def point(self, row, col)->list|None|Any:
+        """
+        Return the cell object at the given row and column.
+
+        This function safely checks whether the given position is inside the maze.
+        If the position is valid, it returns the cell stored there.
+        If the position is outside the maze, it returns None.
+
+        :param row: Row index of the cell.
+        :param col: Column index of the cell.
+        :return: The Cell object at that position, or None if the position is invalid.
+        """
         return self.grid[row][col] if 0 <= row < len(self.grid) and 0 <= col < len(self.grid[row]) else None
 
-    def __init__(self, root, rows, cols):
+    def __init__(self, root, rows, cols)->None:
+        """
+        Create a new maze and initialize all important variables.
+
+        This constructor builds the maze grid, links each cell with its valid
+        neighboring cells, stores the Tkinter root window, and sets the start
+        and goal positions. It also prepares variables that will later store
+        BFS and DFS results such as time, path, cost, and expanded nodes.
+
+        :param root: The main Tkinter window.
+        :param rows: Number of rows in the maze.
+        :param cols: Number of columns in the maze.
+        :return: None
+        """
         self.root = root
         self.rows = rows
         self.cols = cols
@@ -24,6 +64,14 @@ class Maze:
         self.dfs_time = None
         self.bfs_path = None
         self.dfs_path = None
+        self.bfs_cost = None
+        self.dfs_cost = None
+        self.bfs_path_length = None
+        self.dfs_path_length = None
+        self.bfs_expanded_nodes = None
+        self.dfs_expanded_nodes = None
+        self.bfs_expanded_count = None
+        self.dfs_expanded_count = None
 
         for r in range(rows):
             self.grid.append([])
@@ -44,7 +92,16 @@ class Maze:
         self.grid[self.start.row][self.start.col].val = "S"
         self.grid[self.goal.row][self.goal.col].val = "G"
 
-    def __str__(self):
+    def __str__(self)-> str|None :
+        """
+        Return a text version of the maze.
+
+        This function creates a simple string representation of the maze so that
+        it can be printed in the terminal. It shows walls, open paths, and the
+        values stored inside each cell such as S, G, E, or *.
+
+        :return: A string version of the maze layout.
+        """
         result = ""
         for r in range(len(self.grid)):
             result += "  "  
@@ -59,12 +116,55 @@ class Maze:
             result += "\n"
         return result
     
-    def display(self):
-        outer = tk.Frame(self.root, bd=2, relief="solid")
-        outer.pack(padx=50, pady=50)
+    def display(self)->None:
+        """
+        Draw the maze and control buttons on the screen.
+
+        This function creates the full maze UI using Tkinter buttons. It shows
+        each cell, each wall, and colors important cells such as the start,
+        goal, and path cells. It also creates the BFS and DFS buttons and
+        the result label that displays algorithm outputs.
+
+        :return: None
+        """
+        main_frame = tk.Frame(self.root)
+        main_frame.pack(padx=10, pady=10)
+
+        left_frame = tk.Frame(main_frame)
+        left_frame.pack(side=tk.LEFT, padx=20)
+
+        center_frame = tk.Frame(main_frame)
+        center_frame.pack(side=tk.LEFT, padx=20)
+
+        right_frame = tk.Frame(main_frame)
+        right_frame.pack(side=tk.LEFT, padx=20)
+
+        # LEFT SIDE -> BFS output
+        self.bfs_label = tk.Label(
+            left_frame,
+            text="",
+            justify="left",
+            anchor="n",
+            wraplength=250
+        )
+        self.bfs_label.pack()
+
+        # CENTER -> buttons + maze
+        controls = tk.Frame(center_frame)
+        controls.pack(pady=10)
+
+        bfs_btn = tk.Button(controls, text="Run BFS", command=self.run_bfs)
+        bfs_btn.pack(side=tk.LEFT, padx=5)
+
+        dfs_btn = tk.Button(controls, text="Run DFS", command=self.run_dfs)
+        dfs_btn.pack(side=tk.LEFT, padx=5)
+
+        outer = tk.Frame(center_frame, bd=2, relief="solid")
+        outer.pack(padx=10, pady=10)
 
         maze = tk.Frame(outer)
         maze.pack()
+
         self.view["cell"] = []
         for r in range(self.rows):
             self.view["cell"].append([])
@@ -74,48 +174,84 @@ class Maze:
                 (cell := tk.Button(maze, text=self.grid[r][c].val)).grid(row=r*2+1, column=c*2+1)
                 self.view["cell"][r].append(cell)
 
-                if self.grid[r][c].val == "S":
-                    cell.config(bg="lightgreen")
-                elif self.grid[r][c].val == "G":
-                    cell.config(bg="lightcoral")
-                else:
-                    cell.config(bg="white")
+                hori.config(
+                    command=lambda b=hori, cord1=Cord(r, c), cord2=Cord(r, c - 1): self.toggle_button(b, cord1, cord2))
+                vert.config(
+                    command=lambda b=vert, cord1=Cord(r, c), cord2=Cord(r - 1, c): self.toggle_button(b, cord1, cord2))
 
-                hori.config(command=lambda b=hori, cord1=Cord(r, c), cord2=Cord(r, c-1): self.toggle_button(b, cord1, cord2))
-                vert.config(command=lambda b=vert, cord1=Cord(r, c), cord2=Cord(r-1, c): self.toggle_button(b, cord1, cord2))
-            hori = tk.Button(maze, text="x" if self.grid[r][self.cols-1].get_right() is None else ".")
-            hori.grid(row=r*2+1, column=self.cols*2)
+                hori = tk.Button(maze, text="x" if self.grid[r][self.cols - 1].get_right() is None else ".")
+                hori.grid(row=r * 2 + 1, column=self.cols * 2)
+
         for c in range(self.cols):
-            (vert := tk.Button(maze, text="x" if self.grid[self.rows-1][c].get_down() is None else ".")).grid(row=self.rows*2, column=c*2+1)
+            (vert := tk.Button(maze, text="x" if self.grid[self.rows - 1][c].get_down() is None else ".")).grid(
+                row=self.rows * 2, column=c * 2 + 1)
 
-        controls = tk.Frame(self.root)
-        controls.pack(pady=10)
+        # RIGHT SIDE -> DFS output
+        self.dfs_label = tk.Label(
+            right_frame,
+            text="",
+            justify="left",
+            anchor="n",
+            wraplength=250
+        )
+        self.dfs_label.pack()
 
-        bfs_btn = tk.Button(controls, text="Run BFS", command=self.run_bfs)
-        bfs_btn.pack(side=tk.LEFT, padx=5)
-
-        dfs_btn = tk.Button(controls, text="Run DFS")
-        dfs_btn.pack(side=tk.LEFT, padx=5)
-
-        self.result_label = tk.Label(self.root, text="", justify="left", anchor="w")
-        self.result_label.pack(pady=10)
+        self.refresh_cells()
         self.update_result_label()
 
-    def move_start(self, row, col):
+    def move_start(self, row, col)->None:
+        """
+        Move the start position to a new cell.
+
+        This function changes the current start cell to the given position.
+        The old start cell is reset back to a normal empty cell, and the new
+        cell is marked as the start using the value "S".
+
+        :param row: New row for the start position.
+        :param col: New column for the start position.
+        :return: None
+        """
         if 0 <= row < self.rows and 0 <= col < self.cols:
             self.grid[self.start.row][self.start.col].val = "E"
             self.start.row = row
             self.start.col = col
             self.grid[row][col].val = "S"
 
-    def move_goal(self, row, col):
+    def move_goal(self, row, col)->None:
+        """
+        Move the start position to a new cell.
+
+        This function changes the current start cell to the given position.
+        The old start cell is reset back to a normal empty cell, and the new
+        cell is marked as the start using the value "S".
+
+        :param row: New row for the start position.
+        :param col: New column for the start position.
+        :return: None
+        """
         if 0 <= row < self.rows and 0 <= col < self.cols:
             self.grid[self.goal.row][self.goal.col].val = "E"
             self.goal.row = row
             self.goal.col = col
             self.grid[row][col].val = "G"
 
-    def toggle_barrier(self, cord1: Cord, cord2: Cord):
+    def toggle_barrier(self, cord1: Cord, cord2: Cord)-> int:
+        """
+        Add or remove a barrier between two neighboring cells.
+
+        This function checks whether the two given coordinates are valid neighbors.
+        If they are connected, it removes the connection and creates a barrier.
+        If they are blocked, it reconnects them and removes the barrier.
+
+        It works for both horizontal and vertical neighboring cells.
+
+        :param cord1: Coordinate of the first cell.
+        :param cord2: Coordinate of the second neighboring cell.
+        :return:
+            -1 if the cells are invalid or not neighbors
+             0 if a barrier was removed and path was opened
+             1 if a barrier was added and path was blocked
+        """
         cell1 = self.point(cord1.row, cord1.col)
         cell2 = self.point(cord2.row, cord2.col)
         
@@ -148,15 +284,42 @@ class Maze:
 
         return -1
     
-    def reset(self):
+    def reset(self)->None:
+        """
+        Reset all search-related results in the maze.
+
+        This function clears any highlighted search path from the maze and
+        removes all stored BFS and DFS outputs such as time, path, cost,
+        path length, expanded nodes, and expanded count. It then refreshes
+        the result label on the screen.
+
+        :return: None
+        """
         self.clear_search_marks()
         self.bfs_time = None
         self.dfs_time = None
         self.bfs_path = None
         self.dfs_path = None
+        self.bfs_cost = None
+        self.dfs_cost = None
+        self.bfs_path_length = None
+        self.dfs_path_length = None
+        self.bfs_expanded_nodes = None
+        self.dfs_expanded_nodes = None
+        self.bfs_expanded_count = None
+        self.dfs_expanded_count = None
         self.update_result_label()
 
-    def refresh_cells(self):
+    def refresh_cells(self)->None:
+        """
+        Update the maze cell buttons on the screen.
+
+        This function refreshes the text and background color of every cell
+        button based on the current cell value. For example, it shows start
+        as green, goal as red, path as yellow, and normal cells as white.
+
+        :return: None
+        """
         for r in range(self.rows):
             for c in range(self.cols):
                 value = self.grid[r][c].val
@@ -173,7 +336,16 @@ class Maze:
                 else:
                     btn.config(bg="white")
 
-    def clear_search_marks(self):
+    def clear_search_marks(self) -> None:
+        """
+        Remove old BFS or DFS path markings from the maze.
+
+        This function resets all cells back to their normal values before
+        running a new search. It keeps the start cell marked as "S" and the
+        goal cell marked as "G", while all other cells are reset to "E".
+
+        :return: None
+        """
         for r in range(self.rows):
             for c in range(self.cols):
                 if r == self.start.row and c == self.start.col:
@@ -184,7 +356,18 @@ class Maze:
                     self.grid[r][c].val = "E"
         self.refresh_cells()
 
-    def get_neighbors(self, row, col):
+    def get_neighbors(self, row, col)->list:
+        """
+        Return all valid neighboring cells that can be reached from a given cell.
+
+        This function is used by BFS and DFS. It checks the current cell and
+        looks in all four directions: up, down, left, and right. If movement
+        is possible in a direction, that neighboring cell is added to the list.
+
+        :param row: Row of the current cell.
+        :param col: Column of the current cell.
+        :return: A list of reachable neighboring coordinates as (row, col) tuples.
+        """
         neighbors = []
         cell = self.grid[row][col]
 
@@ -202,21 +385,86 @@ class Maze:
 
         return neighbors
 
-    def update_result_label(self):
-        bfs_time_text = "Not run yet" if self.bfs_time is None else f"{self.bfs_time:.6f} s"
-        dfs_time_text = "Not run yet" if self.dfs_time is None else f"{self.dfs_time:.6f} s"
+    def update_result_label(self) -> None:
+        """
+        Run Breadth-First Search on the current maze.
 
-        bfs_path_text = "Not run yet" if self.bfs_path is None else str(self.bfs_path)
-        dfs_path_text = "Not run yet" if self.dfs_path is None else str(self.dfs_path)
+        This function clears old search markings, starts the BFS algorithm,
+        measures the execution time, stores all BFS results, highlights the
+        final BFS path on the maze, prints the results in the terminal, and
+        updates the result label in the UI.
 
-        text = (
-            f"BFS Time: {bfs_time_text}\n"
-            f"BFS Path: {bfs_path_text}\n\n"
-            f"DFS Time: {dfs_time_text}\n"
-            f"DFS Path: {dfs_path_text}"
-        )
+        BFS is expected to find the shortest path in terms of number of steps
+        when all moves have equal cost.
 
-        self.result_label.config(text=text, justify="left")
+        :return: None
+        """
+
+        bfs_text = ""
+        dfs_text = ""
+
+        if self.bfs_time is None:
+            bfs_text += "BFS Time: Not run yet\n"
+        else:
+            bfs_text += f"BFS Time: {self.bfs_time:.6f} s\n"
+
+        if self.bfs_path is None:
+            bfs_text += "BFS Path: Not run yet\n"
+        else:
+            bfs_text += f"BFS Path: {self.bfs_path}\n"
+
+        if self.bfs_cost is None:
+            bfs_text += "BFS Cost: Not run yet\n"
+        else:
+            bfs_text += f"BFS Cost: {self.bfs_cost}\n"
+
+        if self.bfs_path_length is None:
+            bfs_text += "BFS Path Length: Not run yet\n"
+        else:
+            bfs_text += f"BFS Path Length: {self.bfs_path_length}\n"
+
+        if self.bfs_expanded_nodes is None:
+            bfs_text += "BFS Expanded Nodes: Not run yet\n"
+        else:
+            bfs_text += f"BFS Expanded Nodes: {self.bfs_expanded_nodes}\n"
+
+        if self.bfs_expanded_count is None:
+            bfs_text += "BFS Expanded Count: Not run yet\n"
+        else:
+            bfs_text += f"BFS Expanded Count: {self.bfs_expanded_count}\n"
+
+        if self.dfs_time is None:
+            dfs_text += "DFS Time: Not run yet\n"
+        else:
+            dfs_text += f"DFS Time: {self.dfs_time:.6f} s\n"
+
+        if self.dfs_path is None:
+            dfs_text += "DFS Path: Not run yet\n"
+        else:
+            dfs_text += f"DFS Path: {self.dfs_path}\n"
+
+        if self.dfs_cost is None:
+            dfs_text += "DFS Cost: Not run yet\n"
+        else:
+            dfs_text += f"DFS Cost: {self.dfs_cost}\n"
+
+        if self.dfs_path_length is None:
+            dfs_text += "DFS Path Length: Not run yet\n"
+        else:
+            dfs_text += f"DFS Path Length: {self.dfs_path_length}\n"
+
+        if self.dfs_expanded_nodes is None:
+            dfs_text += "DFS Expanded Nodes: Not run yet\n"
+        else:
+            dfs_text += f"DFS Expanded Nodes: {self.dfs_expanded_nodes}\n"
+
+        if self.dfs_expanded_count is None:
+            dfs_text += "DFS Expanded Count: Not run yet\n"
+        else:
+            dfs_text += f"DFS Expanded Count: {self.dfs_expanded_count}\n"
+
+        self.bfs_label.config(text=bfs_text)
+        self.dfs_label.config(text=dfs_text)
 
 
     def run_bfs(self):
@@ -255,6 +503,71 @@ class Maze:
             print("No BFS path found")
 
         print(f"BFS Time: {elapsed:.6f} seconds")
+        print("------------------------")
+
+        self.update_result_label()
+
+    def run_dfs(self)-> None:
+        """
+        Run Depth-First Search on the current maze.
+
+        This function clears old search markings, starts the DFS algorithm,
+        measures the execution time, stores all DFS results, highlights the
+        final DFS path on the maze, prints the results in the terminal, and
+        updates the result label in the UI.
+
+        DFS explores deeply along one path before backtracking, so the final
+        path is not always the shortest one.
+
+        :return: None
+        """
+        print("DFS button clicked")
+        self.clear_search_marks()
+
+        start_time = time.perf_counter()
+
+        start = (self.start.row, self.start.col)
+        goal = (self.goal.row, self.goal.col)
+        dfs_result = dfs(start, goal, self.get_neighbors)
+
+        end_time = time.perf_counter()
+        elapsed = end_time - start_time
+        self.dfs_time = elapsed
+
+        if dfs_result:
+            path, cost, path_length, expanded_nodes, expanded_count = dfs_result
+
+            self.dfs_path = path
+            self.dfs_cost = cost
+            self.dfs_path_length = path_length
+            self.dfs_expanded_nodes = expanded_nodes
+            self.dfs_expanded_count = expanded_count
+
+            start = (self.start.row, self.start.col)
+            goal = (self.goal.row, self.goal.col)
+
+            for r, c in path:
+                if (r, c) != start and (r, c) != goal:
+                    self.grid[r][c].val = "*"
+
+            self.grid[self.start.row][self.start.col].val = "S"
+            self.grid[self.goal.row][self.goal.col].val = "G"
+            self.refresh_cells()
+
+            print("DFS Path:", path)
+            print("DFS Cost:", cost)
+            print("DFS Path Length:", path_length)
+            print("DFS Expanded Nodes:", expanded_nodes)
+            print("DFS Expanded Count:", expanded_count)
+        else:
+            self.dfs_path = None
+            self.dfs_cost = None
+            self.dfs_path_length = None
+            self.dfs_expanded_nodes = None
+            self.dfs_expanded_count = None
+            print("No DFS path found")
+
+        print(f"DFS Time: {elapsed:.6f} seconds")
         print("------------------------")
 
         self.update_result_label()
