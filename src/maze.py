@@ -73,6 +73,7 @@ class Maze:
         
         self.bfs_path_length = None
         self.dfs_path_length = None
+        self.ucs_path_length = None
         self.bfs_expanded_nodes = None
         self.dfs_expanded_nodes = None
         self.ucs_expanded_nodes = None
@@ -156,6 +157,15 @@ class Maze:
         )
         self.bfs_label.pack()
 
+        self.ucs_label = tk.Label(
+            left_frame, 
+            text="",
+            justify="left",
+            anchor="n",
+            wraplength=250
+        )
+        self.ucs_label.pack()
+
         # CENTER -> buttons + maze
         controls = tk.Frame(center_frame)
         controls.pack(pady=10)
@@ -205,15 +215,6 @@ class Maze:
             wraplength=250
         )
         self.dfs_label.pack()
-
-        self.ucs_label = tk.Label(
-            right_frame, 
-            text="",
-            justify="left",
-            anchor="n",
-            wraplength=250
-        )
-        self.ucs_label.pack()
 
         self.refresh_cells()
         self.update_result_label()
