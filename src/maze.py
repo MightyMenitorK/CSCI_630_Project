@@ -4,6 +4,8 @@ from typing import Any
 from cell import Cell, Cord
 from algorithms.BreadthFirstSearch import bfs
 from algorithms.DepthFirstSearch import dfs
+from algorithms.UniformCostSearch import ucs
+from algorithms.GreedyBestFirstSearch import greedy_bfs
 from algorithms.AStarSearch import astar
 
 class Maze:
@@ -60,28 +62,41 @@ class Maze:
         self.cols = cols
         self.grid = []
         self.view = {}
+        
         self.bfs_time = None
         self.dfs_time = None
+        self.ucs_time = Non
+        self.greedy_time = None
         self.astar_time = None
 
         self.bfs_path = None
         self.dfs_path = None
+        self.ucs_path = None
+        self.greedy_path = None
         self.astar_path = None
-
+     
         self.bfs_cost = None
         self.dfs_cost = None
+        self.ucs_cost = None
+        self.greedy_cost = None
         self.astar_cost = None
-
+        
         self.bfs_path_length = None
         self.dfs_path_length = None
+        self.ucs_path_length = None
+        self.greedy_path_length = None
         self.astar_path_length = None
-
+        
         self.bfs_expanded_nodes = None
         self.dfs_expanded_nodes = None
+        self.ucs_expanded_nodes = None
+        self.greedy_expanded_nodes = None
         self.astar_expanded_nodes = None
 
         self.bfs_expanded_count = None
         self.dfs_expanded_count = None
+        self.ucs_expanded_count = None
+        self.greedy_expanded_count = None
         self.astar_expanded_count = None
 
         for r in range(rows):
@@ -150,6 +165,28 @@ class Maze:
         right_frame = tk.Frame(main_frame)
         right_frame.pack(side=tk.LEFT, padx=20)
 
+        # LEFT SIDE -> BFS output,DFS Output
+        self.bfs_label = tk.Label(
+            left_frame,
+            text="",
+            justify="left",
+            anchor="n",
+            wraplength=250
+        )
+        self.bfs_label.pack()
+
+        self.dfs_label = tk.Label(
+            left_frame,
+        self.ucs_label = tk.Label(
+            left_frame, 
+            text="",
+            justify="left",
+            anchor="n",
+            wraplength=250
+        )
+        self.dfs_label.pack()
+        self.ucs_label.pack()
+
         # CENTER -> buttons + maze
         controls = tk.Frame(center_frame)
         controls.pack(pady=10)
@@ -162,6 +199,10 @@ class Maze:
 
         astar_btn = tk.Button(controls, text="Run A*", command=self.run_astar)
         astar_btn.pack(side=tk.LEFT, padx=5)
+        greedy_btn = tk.Button(controls, text="Run Greedy", command=self.run_greedy_bfs)
+        greedy_btn.pack(side=tk.LEFT, padx=5)
+        ucs_btn = tk.Button(controls, text="Run UCS", command=self.run_ucs)
+        ucs_btn.pack(side=tk.LEFT, padx=5)
 
         outer = tk.Frame(center_frame, bd=2, relief="solid")
         outer.pack(padx=10, pady=10)
@@ -202,6 +243,8 @@ class Maze:
 
         # RIGHT SIDE -> Greedy, A*, Genetic algorithm output
         self.right_label = tk.Label(
+        # RIGHT SIDE -> Greedy BFS output
+        self.greedy_label = tk.Label(
             right_frame,
             text="",
             justify="left",
@@ -211,6 +254,7 @@ class Maze:
         self.right_label.pack()
         bottom_frame = tk.Frame(main_frame)
         bottom_frame.pack(side=tk.BOTTOM, pady=10)
+        self.greedy_label.pack()
 
         self.refresh_cells()
         self.update_result_label()
@@ -314,22 +358,40 @@ class Maze:
         self.clear_search_marks()
         self.bfs_time = None
         self.dfs_time = None
+        self.ucs_time = None
+        self.greedy_time = None
         self.astar_time = None
+          
         self.bfs_path = None
         self.dfs_path = None
+        self.ucs_path = None
+        self.greedy_path = None
         self.astar_path = None
+
         self.bfs_cost = None
         self.dfs_cost = None
+        self.ucs_cost = None
+        self.greedy_cost = None
         self.astar_cost = None
+          
         self.bfs_path_length = None
         self.dfs_path_length = None
+        self.ucs_path_length = None
+        self.greedy_path_length = None
         self.astar_path_length = None
+
         self.bfs_expanded_nodes = None
         self.dfs_expanded_nodes = None
+        self.ucs_expanded_nodes = None
+        self.greedy_expanded_nodes = None
         self.astar_expanded_nodes = None
+        
         self.bfs_expanded_count = None
         self.dfs_expanded_count = None
+        self.greedy_expanded_count = None
+        self.ucs_expanded_count = None
         self.astar_expanded_count = None
+
         self.update_result_label()
 
     def refresh_cells(self)->None:
@@ -407,6 +469,16 @@ class Maze:
 
         return neighbors
 
+    def heuristic(self, row, col) -> int:
+        """
+        Return the Manhattan distance from the current cell to the goal cell.
+
+        :param row: Row of the current cell.
+        :param col: Column of the current cell.
+        :return: Heuristic distance to the goal.
+        """
+        return abs(row - self.goal.row) + abs(col - self.goal.col)
+
     def update_result_label(self) -> None:
         """
         Run Breadth-First Search on the current maze.
@@ -423,7 +495,9 @@ class Maze:
         """
 
         bfs_text = ""
-        dfs_text = ""
+        dfs_text = ""        
+        ucs_text = ""
+        greedy_text = ""
         astar_text = ""
 
         if self.bfs_time is None:
@@ -485,6 +559,66 @@ class Maze:
             dfs_text += "DFS Expanded Count: Not run yet\n"
         else:
             dfs_text += f"DFS Expanded Count: {self.dfs_expanded_count}\n"
+        
+        if self.ucs_time is None:   
+            ucs_text += "UCS Time: Not run yet\n"
+        else:
+            ucs_text += f"UCS Time: {self.ucs_time:.6f} s\n"
+
+        if self.ucs_path is None:
+            ucs_text += "UCS Path: Not run yet\n"
+        else:
+            ucs_text += f"UCS Path: {self.ucs_path}\n"
+
+        if self.ucs_cost is None:
+            ucs_text += "UCS Cost: Not run yet\n"
+        else:
+            ucs_text += f"UCS Cost: {self.ucs_cost}\n"
+
+        if self.ucs_path_length is None:
+            ucs_text += "UCS Path Length: Not run yet\n"
+        else:
+            ucs_text += f"UCS Path Length: {self.ucs_path_length}\n"
+
+        if self.ucs_expanded_nodes is None:
+            ucs_text += "UCS Expanded Nodes: Not run yet\n"
+        else:
+            ucs_text += f"UCS Expanded Nodes: {self.ucs_expanded_nodes}\n"
+
+        if self.ucs_expanded_count is None:
+            ucs_text += "UCS Expanded Count: Not run yet\n"
+        else:
+            ucs_text += f"UCS Expanded Count: {self.ucs_expanded_count}\n"
+
+        if self.greedy_time is None:
+            greedy_text += "Greedy Time: Not run yet\n"
+        else:
+            greedy_text += f"Greedy Time: {self.greedy_time:.6f} s\n"
+
+        if self.greedy_path is None:
+            greedy_text += "Greedy Path: Not run yet\n"
+        else:
+            greedy_text += f"Greedy Path: {self.greedy_path}\n"
+
+        if self.greedy_cost is None:
+            greedy_text += "Greedy Cost: Not run yet\n"
+        else:
+            greedy_text += f"Greedy Cost: {self.greedy_cost}\n"
+
+        if self.greedy_path_length is None:
+            greedy_text += "Greedy Path Length: Not run yet\n"
+        else:
+            greedy_text += f"Greedy Path Length: {self.greedy_path_length}\n"
+
+        if self.greedy_expanded_nodes is None:
+            greedy_text += "Greedy Expanded Nodes: Not run yet\n"
+        else:
+            greedy_text += f"Greedy Expanded Nodes: {self.greedy_expanded_nodes}\n"
+
+        if self.greedy_expanded_count is None:
+            greedy_text += "Greedy Expanded Count: Not run yet\n"
+        else:
+            greedy_text += f"Greedy Expanded Count: {self.greedy_expanded_count}\n"
 
         if self.astar_time is None:
             astar_text += "A* Time: Not run yet\n"
@@ -510,6 +644,10 @@ class Maze:
             astar_text += "A* Expanded Nodes: Not run yet\n"
         else:
             astar_text += f"A* Expanded Nodes: {self.astar_expanded_nodes}\n"
+        self.bfs_label.config(text=bfs_text)
+        self.dfs_label.config(text=dfs_text)
+        self.ucs_label.config(text=ucs_text)
+        self.greedy_label.config(text=greedy_text)
 
         if self.astar_expanded_count is None:
             astar_text += "A* Expanded Count: Not run yet\n"
@@ -659,31 +797,80 @@ class Maze:
 
         self.update_result_label()
 
-    def run_astar(self) -> None:
+    def run_ucs(self):
         """
-        Run A* Search on the current maze.
+        Run Uniform Cost Search on the current maze.
+
+        This function clears old search markings, starts the UCS algorithm,
+        measures the execution time, stores all UCS results, highlights the
+        final UCS path on the maze, prints the results in the terminal, and
+        updates the result label in the UI.
+
+        :return: None
         """
-        print("A* button clicked")
+        print("UCS button clicked")
+        self.clear_search_marks()
+
+        start_time = time.perf_counter()
+        start = (self.start.row, self.start.col)
+        goal = (self.goal.row, self.goal.col)
+        
+        result = ucs(start, goal, self.get_neighbors)
+        
+        self.ucs_time = time.perf_counter() - start_time
+
+        if result:
+            path, cost, path_length, expanded_nodes, expanded_count = result
+            self.ucs_path = path
+            self.ucs_cost = cost
+            self.ucs_path_length = path_length
+            self.ucs_expanded_nodes = expanded_nodes
+            self.ucs_expanded_count = expanded_count
+
+            # Highlight path
+            for r, c in path:
+                if (r, c) != start and (r, c) != goal:
+                    self.grid[r][c].val = "*"
+            
+            self.refresh_cells()
+        
+        self.update_result_label()
+
+    def run_greedy_bfs(self) -> None:
+        """
+        Run Greedy Best-First Search on the current maze.
+
+        This function clears old search markings, starts the greedy search,
+        measures execution time, stores the results, highlights the final
+        path on the maze, prints the results in the terminal, and updates
+        the result labels in the UI.
+
+        :return: None
+        """
+        print("Greedy BFS button clicked")
         self.clear_search_marks()
 
         start_time = time.perf_counter()
 
         start = (self.start.row, self.start.col)
         goal = (self.goal.row, self.goal.col)
-        astar_result = astar(start, goal, self.get_neighbors)
+        greedy_result = greedy_bfs(start, goal, self.get_neighbors, self.heuristic)
 
         end_time = time.perf_counter()
         elapsed = end_time - start_time
-        self.astar_time = elapsed
+        self.greedy_time = elapsed
 
-        if astar_result:
-            path, cost, path_length, expanded_nodes, expanded_count = astar_result
+        if greedy_result:
+            path, cost, path_length, expanded_nodes, expanded_count = greedy_result
 
-            self.astar_path = path
-            self.astar_cost = cost
-            self.astar_path_length = path_length
-            self.astar_expanded_nodes = expanded_nodes
-            self.astar_expanded_count = expanded_count
+            self.greedy_path = path
+            self.greedy_cost = cost
+            self.greedy_path_length = path_length
+            self.greedy_expanded_nodes = expanded_nodes
+            self.greedy_expanded_count = expanded_count
+
+            start = (self.start.row, self.start.col)
+            goal = (self.goal.row, self.goal.col)
 
             for r, c in path:
                 if (r, c) != start and (r, c) != goal:
@@ -693,20 +880,20 @@ class Maze:
             self.grid[self.goal.row][self.goal.col].val = "G"
             self.refresh_cells()
 
-            print("A* Path:", path)
-            print("A* Cost:", cost)
-            print("A* Path Length:", path_length)
-            print("A* Expanded Nodes:", expanded_nodes)
-            print("A* Expanded Count:", expanded_count)
+            print("Greedy Path:", path)
+            print("Greedy Cost:", cost)
+            print("Greedy Path Length:", path_length)
+            print("Greedy Expanded Nodes:", expanded_nodes)
+            print("Greedy Expanded Count:", expanded_count)
         else:
-            self.astar_path = None
-            self.astar_cost = None
-            self.astar_path_length = None
-            self.astar_expanded_nodes = None
-            self.astar_expanded_count = None
-            print("No A* path found")
+            self.greedy_path = None
+            self.greedy_cost = None
+            self.greedy_path_length = None
+            self.greedy_expanded_nodes = None
+            self.greedy_expanded_count = None
+            print("No Greedy path found")
 
-        print(f"A* Time: {elapsed:.6f} seconds")
+        print(f"Greedy Time: {elapsed:.6f} seconds")
         print("------------------------")
 
         self.update_result_label()
