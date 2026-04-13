@@ -10,7 +10,8 @@ def greedy_bfs(start, goal, get_neighbors, heuristic) -> tuple | None:
              or None if no path exists
     """
     frontier = []
-    frontier.append((start, [start], 0))   # (node, path, cost)
+    frontier.append((start, [start], 0))
+    # (node, path, cost)
 
     visited = set()
     expanded_nodes = []
