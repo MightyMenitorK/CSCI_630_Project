@@ -65,7 +65,7 @@ class Maze:
         
         self.bfs_time = None
         self.dfs_time = None
-        self.ucs_time = Non
+        self.ucs_time = None
         self.greedy_time = None
         self.astar_time = None
 
@@ -157,35 +157,23 @@ class Maze:
         main_frame.pack(padx=10, pady=10)
 
         left_frame = tk.Frame(main_frame)
-        left_frame.pack(side=tk.LEFT, padx=20)
+        left_frame.pack(side=tk.LEFT, padx=20, anchor="n")
 
         center_frame = tk.Frame(main_frame)
-        center_frame.pack(side=tk.LEFT, padx=20)
+        center_frame.pack(side=tk.LEFT, padx=20, anchor="n")
 
         right_frame = tk.Frame(main_frame)
-        right_frame.pack(side=tk.LEFT, padx=20)
+        right_frame.pack(side=tk.LEFT, padx=20, anchor="n")
 
-        # LEFT SIDE -> BFS output,DFS Output
-        self.bfs_label = tk.Label(
+        # LEFT SIDE -> DFS, BFS, UCS output
+        self.left_label  = tk.Label(
             left_frame,
             text="",
             justify="left",
             anchor="n",
-            wraplength=250
+            wraplength=300
         )
-        self.bfs_label.pack()
-
-        self.dfs_label = tk.Label(
-            left_frame,
-        self.ucs_label = tk.Label(
-            left_frame, 
-            text="",
-            justify="left",
-            anchor="n",
-            wraplength=250
-        )
-        self.dfs_label.pack()
-        self.ucs_label.pack()
+        self.left_label.pack()
 
         # CENTER -> buttons + maze
         controls = tk.Frame(center_frame)
@@ -197,12 +185,14 @@ class Maze:
         dfs_btn = tk.Button(controls, text="Run DFS", command=self.run_dfs)
         dfs_btn.pack(side=tk.LEFT, padx=5)
 
-        astar_btn = tk.Button(controls, text="Run A*", command=self.run_astar)
-        astar_btn.pack(side=tk.LEFT, padx=5)
-        greedy_btn = tk.Button(controls, text="Run Greedy", command=self.run_greedy_bfs)
-        greedy_btn.pack(side=tk.LEFT, padx=5)
         ucs_btn = tk.Button(controls, text="Run UCS", command=self.run_ucs)
         ucs_btn.pack(side=tk.LEFT, padx=5)
+
+        greedy_btn = tk.Button(controls, text="Run Greedy", command=self.run_greedy_bfs)
+        greedy_btn.pack(side=tk.LEFT, padx=5)
+
+        astar_btn = tk.Button(controls, text="Run A*", command=self.run_astar)
+        astar_btn.pack(side=tk.LEFT, padx=5)
 
         outer = tk.Frame(center_frame, bd=2, relief="solid")
         outer.pack(padx=10, pady=10)
@@ -231,20 +221,8 @@ class Maze:
             (vert := tk.Button(maze, text="x" if self.grid[self.rows - 1][c].get_down() is None else ".")).grid(
                 row=self.rows * 2, column=c * 2 + 1)
 
-        # LEFT SIDE -> DFS, BFS, UCS output
-        self.left_label = tk.Label(
-            left_frame,
-            text="",
-            justify="left",
-            anchor="n",
-            wraplength=300
-        )
-        self.left_label.pack()
-
-        # RIGHT SIDE -> Greedy, A*, Genetic algorithm output
+        # RIGHT SIDE -> Greedy, A*, Genetic output
         self.right_label = tk.Label(
-        # RIGHT SIDE -> Greedy BFS output
-        self.greedy_label = tk.Label(
             right_frame,
             text="",
             justify="left",
@@ -252,10 +230,6 @@ class Maze:
             wraplength=300
         )
         self.right_label.pack()
-        bottom_frame = tk.Frame(main_frame)
-        bottom_frame.pack(side=tk.BOTTOM, pady=10)
-        self.greedy_label.pack()
-
         self.refresh_cells()
         self.update_result_label()
 
@@ -499,6 +473,7 @@ class Maze:
         ucs_text = ""
         greedy_text = ""
         astar_text = ""
+        genetic_text = ""
 
         if self.bfs_time is None:
             bfs_text += "BFS Time: Not run yet\n"
@@ -644,25 +619,17 @@ class Maze:
             astar_text += "A* Expanded Nodes: Not run yet\n"
         else:
             astar_text += f"A* Expanded Nodes: {self.astar_expanded_nodes}\n"
-        self.bfs_label.config(text=bfs_text)
-        self.dfs_label.config(text=dfs_text)
-        self.ucs_label.config(text=ucs_text)
-        self.greedy_label.config(text=greedy_text)
 
         if self.astar_expanded_count is None:
             astar_text += "A* Expanded Count: Not run yet\n"
         else:
             astar_text += f"A* Expanded Count: {self.astar_expanded_count}\n"
 
-        ucs_text = "UCS Time: Not run yet\nUCS Path: Not run yet\n"
-        greedy_text = "Greedy Time: Not run yet\nGreedy Path: Not run yet\n"
-        genetic_text = "Genetic Time: Not run yet\nGenetic Path: Not run yet\n"
+        genetic_text += "Genetic Time: Not run yet\n"
+        genetic_text += "Genetic Path: Not run yet\n"
 
-        left_text = bfs_text + "\n" + dfs_text + "\n" + ucs_text
+        left_text = dfs_text + "\n" + bfs_text + "\n" + ucs_text
         right_text = greedy_text + "\n" + astar_text + "\n" + genetic_text
-
-        # left_text = bfs_text + "\n" + dfs_text
-        # right_text = astar_text
 
         self.left_label.config(text=left_text)
         self.right_label.config(text=right_text)
@@ -894,6 +861,58 @@ class Maze:
             print("No Greedy path found")
 
         print(f"Greedy Time: {elapsed:.6f} seconds")
+        print("------------------------")
+
+        self.update_result_label()
+
+    def run_astar(self) -> None:
+        """
+        Run A* Search on the current maze.
+        """
+        print("A* button clicked")
+        self.clear_search_marks()
+
+        start_time = time.perf_counter()
+
+        start = (self.start.row, self.start.col)
+        goal = (self.goal.row, self.goal.col)
+        astar_result = astar(start, goal, self.get_neighbors)
+
+        end_time = time.perf_counter()
+        elapsed = end_time - start_time
+        self.astar_time = elapsed
+
+        if astar_result:
+            path, cost, path_length, expanded_nodes, expanded_count = astar_result
+
+            self.astar_path = path
+            self.astar_cost = cost
+            self.astar_path_length = path_length
+            self.astar_expanded_nodes = expanded_nodes
+            self.astar_expanded_count = expanded_count
+
+            for r, c in path:
+                if (r, c) != start and (r, c) != goal:
+                    self.grid[r][c].val = "*"
+
+            self.grid[self.start.row][self.start.col].val = "S"
+            self.grid[self.goal.row][self.goal.col].val = "G"
+            self.refresh_cells()
+
+            print("A* Path:", path)
+            print("A* Cost:", cost)
+            print("A* Path Length:", path_length)
+            print("A* Expanded Nodes:", expanded_nodes)
+            print("A* Expanded Count:", expanded_count)
+        else:
+            self.astar_path = None
+            self.astar_cost = None
+            self.astar_path_length = None
+            self.astar_expanded_nodes = None
+            self.astar_expanded_count = None
+            print("No A* path found")
+
+        print(f"A* Time: {elapsed:.6f} seconds")
         print("------------------------")
 
         self.update_result_label()
