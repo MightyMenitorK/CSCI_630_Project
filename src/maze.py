@@ -62,16 +62,22 @@ class Maze:
         self.view = {}
         self.bfs_time = None
         self.dfs_time = None
+        self.ucs_time = None
         self.bfs_path = None
         self.dfs_path = None
+        self.ucs_path = None
         self.bfs_cost = None
         self.dfs_cost = None
+        self.ucs_cost = None
+        
         self.bfs_path_length = None
         self.dfs_path_length = None
         self.bfs_expanded_nodes = None
         self.dfs_expanded_nodes = None
+        self.ucs_expanded_nodes = None
         self.bfs_expanded_count = None
         self.dfs_expanded_count = None
+        self.ucs_expanded_count = None
 
         for r in range(rows):
             self.grid.append([])
@@ -570,4 +576,42 @@ class Maze:
         print(f"DFS Time: {elapsed:.6f} seconds")
         print("------------------------")
 
+        self.update_result_label()
+
+    def run_ucs(self):
+        """
+        Run Uniform Cost Search on the current maze.
+
+        This function clears old search markings, starts the UCS algorithm,
+        measures the execution time, stores all UCS results, highlights the
+        final UCS path on the maze, prints the results in the terminal, and
+        updates the result label in the UI.
+
+        :return: None
+        """
+        print("UCS button clicked")
+        self.clear_search_marks()
+
+        start_time = time.perf_counter()
+        start = (self.start.row, self.start.col)
+        goal = (self.goal.row, self.goal.col)
+        
+        result = ucs(start, goal, self.get_neighbors)
+        
+        self.ucs_time = time.perf_counter() - start_time
+
+        if result:
+            path, cost, _, expanded_nodes, expanded_count = result
+            self.ucs_path = path
+            self.ucs_cost = cost
+            self.ucs_expanded_nodes = expanded_nodes
+            self.ucs_expanded_count = expanded_count
+
+            # Highlight path
+            for r, c in path:
+                if (r, c) != start and (r, c) != goal:
+                    self.grid[r][c].val = "*"
+            
+            self.refresh_cells()
+        
         self.update_result_label()
