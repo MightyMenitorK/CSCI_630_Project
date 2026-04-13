@@ -4,6 +4,7 @@ from typing import Any
 from cell import Cell, Cord
 from algorithms.BreadthFirstSearch import bfs
 from algorithms.DepthFirstSearch import dfs
+from algorithms.UniformCostSearch import ucs
 from algorithms.GreedyBestFirstSearch import greedy_bfs
 
 
@@ -61,28 +62,35 @@ class Maze:
         self.cols = cols
         self.grid = []
         self.view = {}
+        
         self.bfs_time = None
         self.dfs_time = None
+        self.ucs_time = Non
         self.greedy_time = None
-
+        
         self.bfs_path = None
         self.dfs_path = None
+        self.ucs_path = None
         self.greedy_path = None
-
+        
         self.bfs_cost = None
         self.dfs_cost = None
+        self.ucs_cost = None
         self.greedy_cost = None
-
+        
         self.bfs_path_length = None
         self.dfs_path_length = None
+        self.ucs_path_length = None
         self.greedy_path_length = None
-
+        
         self.bfs_expanded_nodes = None
         self.dfs_expanded_nodes = None
+        self.ucs_expanded_nodes = None
         self.greedy_expanded_nodes = None
 
         self.bfs_expanded_count = None
         self.dfs_expanded_count = None
+        self.ucs_expanded_count = None
         self.greedy_expanded_count = None
 
         for r in range(rows):
@@ -163,12 +171,15 @@ class Maze:
 
         self.dfs_label = tk.Label(
             left_frame,
+        self.ucs_label = tk.Label(
+            left_frame, 
             text="",
             justify="left",
             anchor="n",
             wraplength=250
         )
         self.dfs_label.pack()
+        self.ucs_label.pack()
 
         # CENTER -> buttons + maze
         controls = tk.Frame(center_frame)
@@ -182,6 +193,8 @@ class Maze:
 
         greedy_btn = tk.Button(controls, text="Run Greedy", command=self.run_greedy_bfs)
         greedy_btn.pack(side=tk.LEFT, padx=5)
+        ucs_btn = tk.Button(controls, text="Run UCS", command=self.run_ucs)
+        ucs_btn.pack(side=tk.LEFT, padx=5)
 
         outer = tk.Frame(center_frame, bd=2, relief="solid")
         outer.pack(padx=10, pady=10)
@@ -322,27 +335,33 @@ class Maze:
         self.clear_search_marks()
         self.bfs_time = None
         self.dfs_time = None
+        self.ucs_time = None
         self.greedy_time = None
 
         self.bfs_path = None
         self.dfs_path = None
+        self.ucs_path = None
         self.greedy_path = None
 
         self.bfs_cost = None
         self.dfs_cost = None
+        self.ucs_cost = None
         self.greedy_cost = None
 
         self.bfs_path_length = None
         self.dfs_path_length = None
+        self.ucs_path_length = None
         self.greedy_path_length = None
 
         self.bfs_expanded_nodes = None
         self.dfs_expanded_nodes = None
+        self.ucs_expanded_nodes = None
         self.greedy_expanded_nodes = None
 
         self.bfs_expanded_count = None
         self.dfs_expanded_count = None
         self.greedy_expanded_count = None
+        self.ucs_expanded_count = None
 
         self.update_result_label()
 
@@ -448,6 +467,7 @@ class Maze:
 
         bfs_text = ""
         dfs_text = ""
+        ucs_text = ""
         greedy_text = ""
 
         if self.bfs_time is None:
@@ -509,6 +529,36 @@ class Maze:
             dfs_text += "DFS Expanded Count: Not run yet\n"
         else:
             dfs_text += f"DFS Expanded Count: {self.dfs_expanded_count}\n"
+        
+        if self.ucs_time is None:   
+            ucs_text += "UCS Time: Not run yet\n"
+        else:
+            ucs_text += f"UCS Time: {self.ucs_time:.6f} s\n"
+
+        if self.ucs_path is None:
+            ucs_text += "UCS Path: Not run yet\n"
+        else:
+            ucs_text += f"UCS Path: {self.ucs_path}\n"
+
+        if self.ucs_cost is None:
+            ucs_text += "UCS Cost: Not run yet\n"
+        else:
+            ucs_text += f"UCS Cost: {self.ucs_cost}\n"
+
+        if self.ucs_path_length is None:
+            ucs_text += "UCS Path Length: Not run yet\n"
+        else:
+            ucs_text += f"UCS Path Length: {self.ucs_path_length}\n"
+
+        if self.ucs_expanded_nodes is None:
+            ucs_text += "UCS Expanded Nodes: Not run yet\n"
+        else:
+            ucs_text += f"UCS Expanded Nodes: {self.ucs_expanded_nodes}\n"
+
+        if self.ucs_expanded_count is None:
+            ucs_text += "UCS Expanded Count: Not run yet\n"
+        else:
+            ucs_text += f"UCS Expanded Count: {self.ucs_expanded_count}\n"
 
         if self.greedy_time is None:
             greedy_text += "Greedy Time: Not run yet\n"
@@ -542,6 +592,7 @@ class Maze:
 
         self.bfs_label.config(text=bfs_text)
         self.dfs_label.config(text=dfs_text)
+        self.ucs_label.config(text=ucs_text)
         self.greedy_label.config(text=greedy_text)
 
 
@@ -648,6 +699,45 @@ class Maze:
         print(f"DFS Time: {elapsed:.6f} seconds")
         print("------------------------")
 
+        self.update_result_label()
+
+    def run_ucs(self):
+        """
+        Run Uniform Cost Search on the current maze.
+
+        This function clears old search markings, starts the UCS algorithm,
+        measures the execution time, stores all UCS results, highlights the
+        final UCS path on the maze, prints the results in the terminal, and
+        updates the result label in the UI.
+
+        :return: None
+        """
+        print("UCS button clicked")
+        self.clear_search_marks()
+
+        start_time = time.perf_counter()
+        start = (self.start.row, self.start.col)
+        goal = (self.goal.row, self.goal.col)
+        
+        result = ucs(start, goal, self.get_neighbors)
+        
+        self.ucs_time = time.perf_counter() - start_time
+
+        if result:
+            path, cost, path_length, expanded_nodes, expanded_count = result
+            self.ucs_path = path
+            self.ucs_cost = cost
+            self.ucs_path_length = path_length
+            self.ucs_expanded_nodes = expanded_nodes
+            self.ucs_expanded_count = expanded_count
+
+            # Highlight path
+            for r, c in path:
+                if (r, c) != start and (r, c) != goal:
+                    self.grid[r][c].val = "*"
+            
+            self.refresh_cells()
+        
         self.update_result_label()
 
     def run_greedy_bfs(self) -> None:
