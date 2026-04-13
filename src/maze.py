@@ -4,6 +4,7 @@ from typing import Any
 from cell import Cell, Cord
 from algorithms.BreadthFirstSearch import bfs
 from algorithms.DepthFirstSearch import dfs
+from algorithms.UniformCostSearch import ucs
 
 
 class Maze:
@@ -165,6 +166,9 @@ class Maze:
         dfs_btn = tk.Button(controls, text="Run DFS", command=self.run_dfs)
         dfs_btn.pack(side=tk.LEFT, padx=5)
 
+        ucs_btn = tk.Button(controls, text="Run UCS", command=self.run_ucs)
+        ucs_btn.pack(side=tk.LEFT, padx=5)
+
         outer = tk.Frame(center_frame, bd=2, relief="solid")
         outer.pack(padx=10, pady=10)
 
@@ -201,6 +205,15 @@ class Maze:
             wraplength=250
         )
         self.dfs_label.pack()
+
+        self.ucs_label = tk.Label(
+            right_frame, 
+            text="",
+            justify="left",
+            anchor="n",
+            wraplength=250
+        )
+        self.ucs_label.pack()
 
         self.refresh_cells()
         self.update_result_label()
@@ -304,16 +317,22 @@ class Maze:
         self.clear_search_marks()
         self.bfs_time = None
         self.dfs_time = None
+        self.ucs_time = None
         self.bfs_path = None
         self.dfs_path = None
+        self.ucs_path = None
         self.bfs_cost = None
         self.dfs_cost = None
+        self.ucs_cost = None
         self.bfs_path_length = None
         self.dfs_path_length = None
+        self.ucs_path_length = None
         self.bfs_expanded_nodes = None
         self.dfs_expanded_nodes = None
+        self.ucs_expanded_nodes = None
         self.bfs_expanded_count = None
         self.dfs_expanded_count = None
+        self.ucs_expanded_count = None
         self.update_result_label()
 
     def refresh_cells(self)->None:
@@ -408,6 +427,7 @@ class Maze:
 
         bfs_text = ""
         dfs_text = ""
+        ucs_text = ""
 
         if self.bfs_time is None:
             bfs_text += "BFS Time: Not run yet\n"
@@ -468,9 +488,40 @@ class Maze:
             dfs_text += "DFS Expanded Count: Not run yet\n"
         else:
             dfs_text += f"DFS Expanded Count: {self.dfs_expanded_count}\n"
+        
+        if self.ucs_time is None:   
+            ucs_text += "UCS Time: Not run yet\n"
+        else:
+            ucs_text += f"UCS Time: {self.ucs_time:.6f} s\n"
+
+        if self.ucs_path is None:
+            ucs_text += "UCS Path: Not run yet\n"
+        else:
+            ucs_text += f"UCS Path: {self.ucs_path}\n"
+
+        if self.ucs_cost is None:
+            ucs_text += "UCS Cost: Not run yet\n"
+        else:
+            ucs_text += f"UCS Cost: {self.ucs_cost}\n"
+
+        if self.ucs_path_length is None:
+            ucs_text += "UCS Path Length: Not run yet\n"
+        else:
+            ucs_text += f"UCS Path Length: {self.ucs_path_length}\n"
+
+        if self.ucs_expanded_nodes is None:
+            ucs_text += "UCS Expanded Nodes: Not run yet\n"
+        else:
+            ucs_text += f"UCS Expanded Nodes: {self.ucs_expanded_nodes}\n"
+
+        if self.ucs_expanded_count is None:
+            ucs_text += "UCS Expanded Count: Not run yet\n"
+        else:
+            ucs_text += f"UCS Expanded Count: {self.ucs_expanded_count}\n"
 
         self.bfs_label.config(text=bfs_text)
         self.dfs_label.config(text=dfs_text)
+        self.ucs_label.config(text=ucs_text)
 
 
     def run_bfs(self):
@@ -601,9 +652,10 @@ class Maze:
         self.ucs_time = time.perf_counter() - start_time
 
         if result:
-            path, cost, _, expanded_nodes, expanded_count = result
+            path, cost, path_length, expanded_nodes, expanded_count = result
             self.ucs_path = path
             self.ucs_cost = cost
+            self.ucs_path_length = path_length
             self.ucs_expanded_nodes = expanded_nodes
             self.ucs_expanded_count = expanded_count
 
