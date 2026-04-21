@@ -5,6 +5,7 @@ from cell import Cell, Cord
 from algorithms.BreadthFirstSearch import bfs
 from algorithms.DepthFirstSearch import dfs
 from algorithms.UniformCostSearch import ucs
+from algorithms.GeneticAlgorithm import ga
 
 
 class Maze:
@@ -64,12 +65,17 @@ class Maze:
         self.bfs_time = None
         self.dfs_time = None
         self.ucs_time = None
+        self.ga_best_time = None
+        self.ga_avg_time = None
         self.bfs_path = None
         self.dfs_path = None
         self.ucs_path = None
+        self.ga_best_path = None
         self.bfs_cost = None
         self.dfs_cost = None
         self.ucs_cost = None
+        self.ga_best_cost = None
+        self.ga_avg_cost = None
         
         self.bfs_path_length = None
         self.dfs_path_length = None
@@ -80,6 +86,8 @@ class Maze:
         self.bfs_expanded_count = None
         self.dfs_expanded_count = None
         self.ucs_expanded_count = None
+
+        self.ga_success_rate = None
 
         for r in range(rows):
             self.grid.append([])
@@ -216,6 +224,16 @@ class Maze:
         )
         self.dfs_label.pack()
 
+        self.ga_label = tk.Label(
+            right_frame, 
+            text="", 
+            justify="left", 
+            anchor="n", 
+            wraplength=250, 
+            fg="blue"
+        )
+        self.ga_label.pack(pady=10)
+
         self.refresh_cells()
         self.update_result_label()
 
@@ -334,6 +352,14 @@ class Maze:
         self.bfs_expanded_count = None
         self.dfs_expanded_count = None
         self.ucs_expanded_count = None
+
+        self.ga_avg_cost = None
+        self.ga_avg_time = None
+        self.ga_success_rate = None
+        self.ga_best_path = None
+        self.ga_best_time = None
+        self.ga_best_cost = None
+
         self.update_result_label()
 
     def refresh_cells(self)->None:
@@ -668,3 +694,62 @@ class Maze:
             self.refresh_cells()
         
         self.update_result_label()
+
+    def run_ga(self, max_iter=50):
+        print("GA button clicked - Running 5 iterations")
+        self.clear_search_marks()
+        
+        total_time = 0
+        total_cost = 0
+        successes = 0
+        
+        best_run_path = None
+        best_run_time = float('inf')
+        best_run_cost = float('inf')
+        best_run_nodes = None
+        best_run_count = 0
+
+        for i in range(5):
+            start_time = time.perf_counter()
+            res = ga((self.start.row, self.start.col), 
+                                    (self.goal.row, self.goal.col), 
+                                    self.get_neighbors, max_iter=max_iter)
+            elapsed = time.perf_counter() - start_time
+            
+            path, cost, path_len, expanded, count, success = res
+            
+            total_time += elapsed
+            total_cost += cost
+            successes += success
+
+            # Track the "Best" path (shortest cost of successful runs)
+            if success and cost < best_run_cost:
+                best_run_cost = cost
+                best_run_path = path
+                best_run_time = elapsed
+                best_run_nodes = expanded
+                best_run_count = count
+
+        # Averages
+        self.ga_avg_time = total_time / 5
+        self.ga_avg_cost = total_cost / 5
+        self.ga_success_rate = (successes / 5) * 100
+        
+        # Best Data
+        if best_run_path:
+            self.ga_best_path = best_run_path
+            self.ga_best_time = best_run_time
+            self.ga_best_cost = best_run_cost
+            
+            # Mark the best path on UI
+            for r, c in best_run_path:
+                if (r, c) != (self.start.row, self.start.col) and (r, c) != (self.goal.row, self.goal.col):
+                    self.grid[r][c].val = "*"
+            self.refresh_cells()
+        
+        self.update_ga_label() # You'll need a label for this in your UI
+
+    def update_ga_label(self):
+        # Update your UI label with self.ga_avg_time, self.ga_success_rate, etc.
+        # Follow the pattern used in your update_result_label()
+        pass
