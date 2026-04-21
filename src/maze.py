@@ -858,14 +858,14 @@ class Maze:
             self.ucs_path = None
             print("No UCS path found")
 
-        print(f"UCS Time: {elapsed:.6f} seconds")
+        print(f"UCS Time: {self.ucs_time:.6f} seconds")
         print("------------------------")
         
         self.update_result_label()
 
-    def run_ga(self, max_iter=100): # Increased default iterations for better results
+    def run_ga(self, max_iter=200): 
         print("GA button clicked - Running 5 iterations...")
-        self.reset() # Using your reset to clear old search data
+        self.reset() 
         
         total_time = 0
         total_cost = 0
