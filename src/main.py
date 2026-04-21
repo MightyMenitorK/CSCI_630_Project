@@ -17,7 +17,7 @@ def extract(filename: str):
         sr, sc = map(int, lines[1].split(','))
         gr, gc = map(int, lines[2].split(','))
         
-        # Parse Barriers (the remaining lines)
+        # Parse Barriers 
         barriers = []
         for line in lines[3:]:
             coords = list(map(int, line.split(',')))
@@ -47,9 +47,9 @@ def prompt():
         except ValueError:
             return default_range[0]
 
-    r = get_val("Enter rows (Enter for random, max 20): ", (3, 15), 20)
-    c = get_val("Enter cols (Enter for random, max 20): ", (3, 15), 20)
-    
+    r = get_val("Enter rows (Enter for random, max 20): ", (3, 20), 20)
+    c = get_val("Enter cols (Enter for random, max 20): ", (3, 20), 20)
+
     sr = get_val(f"Start row (0-{r-1}, Enter for random): ", (0, r-1), r)
     sc = get_val(f"Start col (0-{c-1}, Enter for random): ", (0, c-1), c)
     

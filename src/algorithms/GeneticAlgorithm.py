@@ -66,7 +66,7 @@ def ga(start, goal, get_neighbors, max_iter=500, pop_size=100):
             cut = random.randint(1, path_limit - 1)
             child = p1[:cut] + p2[cut:]
             # Mutation
-            if random.random() < 0.1:
+            if random.random() < 0.3:
                 child[random.randint(0, path_limit - 1)] = random.choice(directions)
             next_gen.append(child)
         
