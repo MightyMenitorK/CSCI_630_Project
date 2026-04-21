@@ -988,7 +988,6 @@ class Maze:
 
     def run_ga(self): 
         print("GA button clicked - Running 5 iterations...")
-        self.reset() 
 
         try:
             max_iter = int(self.ga_iter.get())
