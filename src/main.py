@@ -103,4 +103,5 @@ if __name__ == "__main__":
         maze.toggle_barrier(c1, c2)
 
     maze.display()
+    print(maze)
     root.mainloop()
