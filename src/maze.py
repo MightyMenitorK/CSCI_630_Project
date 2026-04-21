@@ -29,7 +29,7 @@ class Maze:
         result = self.toggle_barrier(cord1, cord2)
         if result == -1:
             print("cant toggle")
-        button.config(text="." if result == 0 else "x")
+        button.config(bg=("#d9d9d9" if result == 0 else "#595959"))
 
     def point(self, row, col)->list|None|Any:
         """
@@ -64,6 +64,7 @@ class Maze:
         self.cols = cols
         self.grid = []
         self.view = {}
+        self.pixel_virtual = tk.PhotoImage(width=1, height=1)
         
         self.bfs_time = None
         self.dfs_time = None
@@ -108,6 +109,7 @@ class Maze:
 
         self.ga_success_rate = None
         self.ga_iter = tk.StringVar(value="500")
+
 
         for r in range(rows):
             self.grid.append([])
@@ -223,8 +225,8 @@ class Maze:
         for r in range(self.rows):
             self.view["cell"].append([])
             for c in range(self.cols):
-                (vert := tk.Button(maze, text=("x" if self.grid[r][c].get_up() is None else "."))).grid(row=r*2, column=c*2+1)
-                (hori := tk.Button(maze, text=("x" if self.grid[r][c].get_left() is None else "."))).grid(row=r*2+1, column=c*2)
+                (vert := tk.Button(maze, image=self.pixel_virtual, width=20, height=1, bg=("#595959" if self.grid[r][c].get_up() is None else "#d9d9d9"))).grid(row=r*2, column=c*2+1)
+                (hori := tk.Button(maze, image=self.pixel_virtual, width=1, height=20, bg=("#595959" if self.grid[r][c].get_left() is None else "#d9d9d9"))).grid(row=r*2+1, column=c*2)
                 (cell := tk.Button(maze, text=self.grid[r][c].val)).grid(row=r*2+1, column=c*2+1)
                 self.view["cell"][r].append(cell)
 
@@ -233,11 +235,11 @@ class Maze:
                 vert.config(
                     command=lambda b=vert, cord1=Cord(r, c), cord2=Cord(r - 1, c): self.toggle_button(b, cord1, cord2))
 
-                hori = tk.Button(maze, text="x" if self.grid[r][self.cols - 1].get_right() is None else ".")
+                hori = tk.Button(maze, image=self.pixel_virtual, width=1, height=20, bg=("#595959" if self.grid[r][self.cols - 1].get_right() is None else "#d9d9d9"))
                 hori.grid(row=r * 2 + 1, column=self.cols * 2)
 
         for c in range(self.cols):
-            (vert := tk.Button(maze, text="x" if self.grid[self.rows - 1][c].get_down() is None else ".")).grid(
+            (vert := tk.Button(maze, image=self.pixel_virtual, width=20, height=1, bg=("#595959" if self.grid[self.rows - 1][c].get_down() is None else "#d9d9d9"))).grid(
                 row=self.rows * 2, column=c * 2 + 1)
 
         # RIGHT SIDE -> Greedy, A*, Genetic output
