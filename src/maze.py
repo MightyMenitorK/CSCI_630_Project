@@ -7,6 +7,8 @@ from algorithms.DepthFirstSearch import dfs
 from algorithms.UniformCostSearch import ucs
 from algorithms.GreedyBestFirstSearch import greedy_bfs
 from algorithms.AStarSearch import astar
+from algorithms.GeneticAlgorithm import ga
+
 
 class Maze:
 
@@ -68,18 +70,23 @@ class Maze:
         self.ucs_time = None
         self.greedy_time = None
         self.astar_time = None
+        self.ga_best_time = None
+        self.ga_avg_time = None
 
         self.bfs_path = None
         self.dfs_path = None
         self.ucs_path = None
         self.greedy_path = None
         self.astar_path = None
+        self.ga_best_path = None
      
         self.bfs_cost = None
         self.dfs_cost = None
         self.ucs_cost = None
         self.greedy_cost = None
         self.astar_cost = None
+        self.ga_best_cost = None
+        self.ga_avg_cost = None
         
         self.bfs_path_length = None
         self.dfs_path_length = None
@@ -98,6 +105,8 @@ class Maze:
         self.ucs_expanded_count = None
         self.greedy_expanded_count = None
         self.astar_expanded_count = None
+
+        self.ga_success_rate = None
 
         for r in range(rows):
             self.grid.append([])
@@ -193,6 +202,9 @@ class Maze:
 
         astar_btn = tk.Button(controls, text="Run A*", command=self.run_astar)
         astar_btn.pack(side=tk.LEFT, padx=5)
+        
+        ga_btn = tk.Button(controls, text="Run GA", command=self.run_ga)
+        ga_btn.pack(side=tk.LEFT, padx=5)
 
         outer = tk.Frame(center_frame, bd=2, relief="solid")
         outer.pack(padx=10, pady=10)
@@ -230,6 +242,7 @@ class Maze:
             wraplength=300
         )
         self.right_label.pack()
+
         self.refresh_cells()
         self.update_result_label()
 
@@ -366,6 +379,15 @@ class Maze:
         self.ucs_expanded_count = None
         self.astar_expanded_count = None
 
+        self.ga_avg_cost = None
+        self.ga_avg_time = None
+        self.ga_success_rate = None
+        self.ga_best_path = None
+        self.ga_best_nodes = None 
+        self.ga_best_count = None 
+        self.ga_best_time = None
+        self.ga_best_cost = None
+
         self.update_result_label()
 
     def refresh_cells(self)->None:
@@ -473,7 +495,7 @@ class Maze:
         ucs_text = ""
         greedy_text = ""
         astar_text = ""
-        genetic_text = ""
+        ga_text = ""
 
         if self.bfs_time is None:
             bfs_text += "BFS Time: Not run yet\n"
@@ -625,11 +647,38 @@ class Maze:
         else:
             astar_text += f"A* Expanded Count: {self.astar_expanded_count}\n"
 
-        genetic_text += "Genetic Time: Not run yet\n"
-        genetic_text += "Genetic Path: Not run yet\n"
+        if self.ga_avg_time is None:
+            ga_text += "GA Avg Time: Not run yet\n"
+        else:
+            ga_text += f"GA Avg Time: {self.ga_avg_time:.6f} s\n"
+
+        if self.ga_avg_cost is None:
+            ga_text += "GA Avg Cost: Not run yet\n"
+        else:
+            ga_text += f"GA Avg Cost: {self.ga_avg_cost:.2f}\n"
+
+        if self.ga_success_rate is None:
+            ga_text += "GA Success Rate: Not run yet\n" 
+        else:
+            ga_text += f"GA Success Rate: {self.ga_success_rate:.1f}%\n"
+
+        if self.ga_best_time is None:
+            ga_text += "GA Best Time: Not run yet\n"
+        else:
+            ga_text += f"GA Best Time: {self.ga_best_time:.6f} s\n"
+
+        if self.ga_best_cost is None:
+            ga_text += "GA Best Cost: Not run yet\n"
+        else:
+            ga_text += f"GA Best Cost: {self.ga_best_cost}\n"
+
+        if self.ga_best_path is None:
+            ga_text += "GA Best Path: Not run yet\n"
+        else:
+            ga_text += f"GA Best Path: {self.ga_best_path}\n"
 
         left_text = dfs_text + "\n" + bfs_text + "\n" + ucs_text
-        right_text = greedy_text + "\n" + astar_text + "\n" + genetic_text
+        right_text = greedy_text + "\n" + astar_text + "\n" + ga_text
 
         self.left_label.config(text=left_text)
         self.right_label.config(text=right_text)
@@ -794,12 +843,83 @@ class Maze:
             self.ucs_expanded_nodes = expanded_nodes
             self.ucs_expanded_count = expanded_count
 
-            # Highlight path
             for r, c in path:
                 if (r, c) != start and (r, c) != goal:
                     self.grid[r][c].val = "*"
             
             self.refresh_cells()
+
+            print("UCS Path:", path)
+            print("UCS Cost:", cost)
+            print("UCS Path Length:", path_length)
+            print("UCS Expanded Nodes:", expanded_nodes)
+            print("UCS Expanded Count:", expanded_count)
+        else:
+            self.ucs_path = None
+            print("No UCS path found")
+
+        print(f"UCS Time: {elapsed:.6f} seconds")
+        print("------------------------")
+        
+        self.update_result_label()
+
+    def run_ga(self, max_iter=100): # Increased default iterations for better results
+        print("GA button clicked - Running 5 iterations...")
+        self.reset() # Using your reset to clear old search data
+        
+        total_time = 0
+        total_cost = 0
+        successes = 0
+        
+        best_run_path = None
+        best_run_cost = float('inf')
+        best_run_time = 0
+
+        start_node = (self.start.row, self.start.col)
+        goal_node = (self.goal.row, self.goal.col)
+
+        for i in range(5):
+            start_t = time.perf_counter()
+            # Calling your imported ga function
+            res = ga(start_node, goal_node, self.get_neighbors, max_iter=max_iter)
+            elapsed = time.perf_counter() - start_t
+            
+            path, cost, path_len, expanded, count, success = res
+            
+            total_time += elapsed
+            if success:
+                total_cost += cost
+                successes += 1
+                if cost < best_run_cost:
+                    best_run_cost = cost
+                    best_run_path = path
+                    best_run_time = elapsed
+
+        # Calculate Averages
+        self.ga_avg_time = total_time / 5
+        self.ga_avg_cost = total_cost / successes if successes > 0 else 0
+        self.ga_success_rate = (successes / 5) * 100
+        
+        # Display Best Path
+        if best_run_path:
+            self.ga_best_path = best_run_path
+            self.ga_best_time = best_run_time
+            self.ga_best_cost = best_run_cost
+            
+            for r, c in best_run_path:
+                if (r, c) != start_node and (r, c) != goal_node:
+                    self.grid[r][c].val = "*"
+            self.refresh_cells()
+
+            print("GA Best Path:", best_run_path)
+            print("GA Best Cost:", best_run_cost)
+            print("GA Best Path Length:", len(best_run_path))
+        else:
+            print("No GA path found in 5 iterations")
+
+        print(f"GA Avg Time: {self.ga_avg_time:.6f} seconds")
+        print(f"GA Success Rate: {self.ga_success_rate}%")
+        print("------------------------")
         
         self.update_result_label()
 
