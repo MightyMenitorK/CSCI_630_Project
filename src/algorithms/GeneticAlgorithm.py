@@ -1,7 +1,7 @@
 import random
 import time
 
-def ga(start, goal, get_neighbors, max_iter=50, pop_size=100):
+def ga(start, goal, get_neighbors, max_iter=500, pop_size=100):
     # Directions: 0: Up, 1: Down, 2: Left, 3: Right
     directions = [0, 1, 2, 3]
     

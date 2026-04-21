@@ -107,6 +107,7 @@ class Maze:
         self.astar_expanded_count = None
 
         self.ga_success_rate = None
+        self.ga_iter = tk.StringVar(value="500")
 
         for r in range(rows):
             self.grid.append([])
@@ -202,7 +203,13 @@ class Maze:
 
         astar_btn = tk.Button(controls, text="Run A*", command=self.run_astar)
         astar_btn.pack(side=tk.LEFT, padx=5)
+
+        ga_label = tk.Label(controls, text="GA Iters:")
+        ga_label.pack(side=tk.LEFT, padx=(10, 2))
         
+        self.ga_iter_entry = tk.Entry(controls, textvariable=self.ga_iter, width=5)
+        self.ga_iter_entry.pack(side=tk.LEFT, padx=5)
+
         ga_btn = tk.Button(controls, text="Run GA", command=self.run_ga)
         ga_btn.pack(side=tk.LEFT, padx=5)
 
@@ -863,66 +870,6 @@ class Maze:
         
         self.update_result_label()
 
-    def run_ga(self, max_iter=200): 
-        print("GA button clicked - Running 5 iterations...")
-        self.reset() 
-        
-        total_time = 0
-        total_cost = 0
-        successes = 0
-        
-        best_run_path = None
-        best_run_cost = float('inf')
-        best_run_time = 0
-
-        start_node = (self.start.row, self.start.col)
-        goal_node = (self.goal.row, self.goal.col)
-
-        for i in range(5):
-            start_t = time.perf_counter()
-            # Calling your imported ga function
-            res = ga(start_node, goal_node, self.get_neighbors, max_iter=max_iter)
-            elapsed = time.perf_counter() - start_t
-            
-            path, cost, path_len, expanded, count, success = res
-            
-            total_time += elapsed
-            if success:
-                total_cost += cost
-                successes += 1
-                if cost < best_run_cost:
-                    best_run_cost = cost
-                    best_run_path = path
-                    best_run_time = elapsed
-
-        # Calculate Averages
-        self.ga_avg_time = total_time / 5
-        self.ga_avg_cost = total_cost / successes if successes > 0 else 0
-        self.ga_success_rate = (successes / 5) * 100
-        
-        # Display Best Path
-        if best_run_path:
-            self.ga_best_path = best_run_path
-            self.ga_best_time = best_run_time
-            self.ga_best_cost = best_run_cost
-            
-            for r, c in best_run_path:
-                if (r, c) != start_node and (r, c) != goal_node:
-                    self.grid[r][c].val = "*"
-            self.refresh_cells()
-
-            print("GA Best Path:", best_run_path)
-            print("GA Best Cost:", best_run_cost)
-            print("GA Best Path Length:", len(best_run_path))
-        else:
-            print("No GA path found in 5 iterations")
-
-        print(f"GA Avg Time: {self.ga_avg_time:.6f} seconds")
-        print(f"GA Success Rate: {self.ga_success_rate}%")
-        print("------------------------")
-        
-        self.update_result_label()
-
     def run_greedy_bfs(self) -> None:
         """
         Run Greedy Best-First Search on the current maze.
@@ -1035,4 +982,70 @@ class Maze:
         print(f"A* Time: {elapsed:.6f} seconds")
         print("------------------------")
 
+        self.update_result_label()
+
+    def run_ga(self): 
+        print("GA button clicked - Running 5 iterations...")
+        self.reset() 
+
+        try:
+            max_iter = int(self.ga_iter.get())
+        except ValueError:
+            print("Invalid iteration input. Defaulting to 500.")
+            max_iter = 500
+        
+        total_time = 0
+        total_cost = 0
+        successes = 0
+        
+        best_run_path = None
+        best_run_cost = float('inf')
+        best_run_time = 0
+
+        start_node = (self.start.row, self.start.col)
+        goal_node = (self.goal.row, self.goal.col)
+
+        for i in range(5):
+            start_t = time.perf_counter()
+            # Calling your imported ga function
+            res = ga(start_node, goal_node, self.get_neighbors, max_iter=max_iter)
+            elapsed = time.perf_counter() - start_t
+            
+            path, cost, path_len, expanded, count, success = res
+            
+            total_time += elapsed
+            if success:
+                total_cost += cost
+                successes += 1
+                if cost < best_run_cost:
+                    best_run_cost = cost
+                    best_run_path = path
+                    best_run_time = elapsed
+
+        # Calculate Averages
+        self.ga_avg_time = total_time / 5
+        self.ga_avg_cost = total_cost / successes if successes > 0 else 0
+        self.ga_success_rate = (successes / 5) * 100
+        
+        # Display Best Path
+        if best_run_path:
+            self.ga_best_path = best_run_path
+            self.ga_best_time = best_run_time
+            self.ga_best_cost = best_run_cost
+            
+            for r, c in best_run_path:
+                if (r, c) != start_node and (r, c) != goal_node:
+                    self.grid[r][c].val = "*"
+            self.refresh_cells()
+
+            print("GA Best Path:", best_run_path)
+            print("GA Best Cost:", best_run_cost)
+            print("GA Best Path Length:", len(best_run_path))
+        else:
+            print("No GA path found in 5 iterations")
+
+        print(f"GA Avg Time: {self.ga_avg_time:.6f} seconds")
+        print(f"GA Success Rate: {self.ga_success_rate}%")
+        print("------------------------")
+        
         self.update_result_label()
