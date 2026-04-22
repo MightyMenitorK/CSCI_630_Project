@@ -1,0 +1,6 @@
+# 10x10 Spiral
+5, 5
+# Start at top-left
+0, 0
+# Goal in the center area
+4, 4 
